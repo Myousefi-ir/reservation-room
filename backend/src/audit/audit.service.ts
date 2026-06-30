@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { AuditAction, Prisma } from '@prisma/client';
+import { AuditAction } from '../common/enums';
 import { PrismaService } from '../prisma/prisma.service';
 
 interface AuditInput {
@@ -23,7 +23,7 @@ export class AuditService {
           action: input.action,
           entityType: input.entityType,
           entityId: input.entityId ?? null,
-          metadata: (input.metadata ?? undefined) as Prisma.InputJsonValue | undefined,
+          metadata: input.metadata ? JSON.stringify(input.metadata) : null,
         },
       });
     } catch {

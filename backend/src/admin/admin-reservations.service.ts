@@ -5,7 +5,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Prisma, ReservationStatus } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import { ReservationStatus } from '../common/enums';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { RejectReservationDto, UpdateReservationDto } from './dto/update-reservation.dto';
@@ -67,9 +68,9 @@ export class AdminReservationsService {
     if (query.q) {
       const q = query.q.trim();
       where.OR = [
-        { title: { contains: q, mode: 'insensitive' } },
-        { user: { firstName: { contains: q, mode: 'insensitive' } } },
-        { user: { lastName: { contains: q, mode: 'insensitive' } } },
+        { title: { contains: q } },
+        { user: { firstName: { contains: q } } },
+        { user: { lastName: { contains: q } } },
         { user: { mobile: { contains: q } } },
       ];
     }
@@ -95,7 +96,9 @@ export class AdminReservationsService {
     const rescheduleKeys = [dto.roomId, dto.date, dto.startTime];
     const isReschedule = rescheduleKeys.some((v) => v !== undefined);
 
-    const data: Prisma.ReservationUpdateInput = {};
+    // Unchecked variant so the reschedule branch can set the scalar `roomId`
+    // (the checked ReservationUpdateInput only exposes the `room` relation).
+    const data: Prisma.ReservationUncheckedUpdateInput = {};
     if (dto.title !== undefined) data.title = dto.title.trim();
     if (dto.description !== undefined) data.description = dto.description.trim() || null;
     if (dto.attendees !== undefined) data.attendees = dto.attendees;
@@ -138,9 +141,6 @@ export class AdminReservationsService {
 
     const updated = await this.prisma
       .$transaction(async (tx) => {
-        const lockKey = `${roomId}|${dateStr}|${startTime}`;
-        await tx.$queryRawUnsafe('SELECT pg_advisory_xact_lock(hashtext($1)::bigint)', lockKey);
-
         const clash = await tx.reservation.findFirst({
           where: {
             roomId,

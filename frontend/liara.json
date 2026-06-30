@@ -1,7 +1,0 @@
-{
-  "app": "mammut-vip-web",
-  "platform": "next",
-  "build": {
-    "location": "iran"
-  }
-}

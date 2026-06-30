@@ -1,7 +1,10 @@
 {
-  "app": "mammut-vip-api",
+  "app": "mammut-vip",
   "platform": "docker",
   "port": 4000,
+  "disks": [
+    { "name": "data", "mountTo": "/app/data" }
+  ],
   "healthCheck": {
     "command": "wget -q -O /dev/null http://127.0.0.1:4000/api/health || exit 1",
     "interval": 30,

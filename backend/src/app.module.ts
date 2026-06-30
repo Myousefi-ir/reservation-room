@@ -1,6 +1,8 @@
+import { join } from 'path';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { ServeStaticModule } from '@nestjs/serve-static';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuditModule } from './audit/audit.module';
 import { SmsModule } from './sms/sms.module';
@@ -18,6 +20,13 @@ import { RolesGuard } from './common/guards/roles.guard';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    // Serve the statically-exported Next.js frontend from this same service.
+    // API routes (prefixed with /api) are excluded so they reach the controllers.
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'frontend'),
+      serveStaticOptions: { extensions: ['html'] },
+      exclude: ['/api/(.*)'],
+    }),
     PrismaModule,
     AuditModule,
     SmsModule,

@@ -13,6 +13,10 @@ backend/dist/
 frontend/.next/
 frontend/out/
 frontend/build/
+# static frontend copied into the backend image at Docker build time
+backend/frontend/
+# Next.js generated type shim (regenerated on build)
+frontend/next-env.d.ts
 
 # prisma
 backend/prisma/*.db

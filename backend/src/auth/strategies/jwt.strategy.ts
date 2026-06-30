@@ -4,6 +4,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
+import { UserRole, UserStatus } from '../../common/enums';
 
 interface JwtPayload {
   sub: string;
@@ -30,8 +31,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       firstName: user.firstName,
       lastName: user.lastName,
       mobile: user.mobile,
-      role: user.role,
-      status: user.status,
+      role: user.role as UserRole,
+      status: user.status as UserStatus,
     };
   }
 }

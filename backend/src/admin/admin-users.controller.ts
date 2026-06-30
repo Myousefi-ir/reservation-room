@@ -1,5 +1,5 @@
 import { Controller, Delete, Get, Param, Patch, Query } from '@nestjs/common';
-import { UserStatus } from '@prisma/client';
+import { UserStatus } from '../common/enums';
 import { AdminUsersService } from './admin-users.service';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser, AuthUser } from '../common/decorators/current-user.decorator';

@@ -7,7 +7,7 @@ import {
   Patch,
   Query,
 } from '@nestjs/common';
-import { ReservationStatus } from '@prisma/client';
+import { ReservationStatus } from '../common/enums';
 import { AdminReservationsService } from './admin-reservations.service';
 import { RejectReservationDto, UpdateReservationDto } from './dto/update-reservation.dto';
 import { Roles } from '../common/decorators/roles.decorator';

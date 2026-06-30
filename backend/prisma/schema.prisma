@@ -4,50 +4,24 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
-enum UserStatus {
-  pending
-  active
-  rejected
-}
-
-enum UserRole {
-  user
-  admin
-}
-
-enum ReservationStatus {
-  active
-  cancelled
-  deleted
-}
-
-enum AuditAction {
-  reservation_created
-  reservation_cancelled
-  reservation_updated
-  reservation_rejected
-  reservation_deleted
-  user_approved
-  user_rejected
-  user_deleted
-  role_granted
-  role_revoked
-}
+// NOTE: SQLite (via Prisma) does not support native enums, the Json type, or the
+// @db.Date column type. Those are stored as plain strings here; the allowed enum
+// values are mirrored as TypeScript union types in src/common/enums.ts.
 
 model User {
-  id        String     @id @default(uuid())
-  firstName String     @map("first_name")
-  lastName  String     @map("last_name")
-  mobile    String     @unique
+  id        String   @id @default(uuid())
+  firstName String   @map("first_name")
+  lastName  String   @map("last_name")
+  mobile    String   @unique
   password  String
-  status    UserStatus @default(pending)
-  role      UserRole   @default(user)
-  createdAt DateTime   @default(now()) @map("created_at")
-  updatedAt DateTime   @updatedAt @map("updated_at")
+  status    String   @default("pending") // UserStatus: pending | active | rejected
+  role      String   @default("user") // UserRole: user | admin
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   reservations   Reservation[]
   participations Participant[]
@@ -71,18 +45,18 @@ model Room {
 }
 
 model Reservation {
-  id          String            @id @default(uuid())
-  userId      String            @map("user_id")
-  roomId      String            @map("room_id")
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  roomId      String   @map("room_id")
   title       String
   description String?
-  date        DateTime          @db.Date
-  startTime   String            @map("start_time") // "HH:mm" (Asia/Tehran)
-  endTime     String            @map("end_time") // "HH:mm" (Asia/Tehran)
-  attendees   Int               @default(0)
-  status      ReservationStatus @default(active)
-  createdAt   DateTime          @default(now()) @map("created_at")
-  updatedAt   DateTime          @updatedAt @map("updated_at")
+  date        DateTime // calendar day stored at UTC midnight (see tehran-time.ts)
+  startTime   String   @map("start_time") // "HH:mm" (Asia/Tehran)
+  endTime     String   @map("end_time") // "HH:mm" (Asia/Tehran)
+  attendees   Int      @default(0)
+  status      String   @default("active") // ReservationStatus: active | cancelled | deleted
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   room         Room          @relation(fields: [roomId], references: [id], onDelete: Cascade)
@@ -121,13 +95,13 @@ model RefreshToken {
 }
 
 model AuditLog {
-  id         String      @id @default(uuid())
-  actorId    String?     @map("actor_id")
-  action     AuditAction
-  entityType String      @map("entity_type")
-  entityId   String?     @map("entity_id")
-  metadata   Json?
-  createdAt  DateTime    @default(now()) @map("created_at")
+  id         String   @id @default(uuid())
+  actorId    String?  @map("actor_id")
+  action     String // AuditAction (see src/common/enums.ts)
+  entityType String   @map("entity_type")
+  entityId   String?  @map("entity_id")
+  metadata   String? // JSON-encoded string (SQLite has no Json type)
+  createdAt  DateTime @default(now()) @map("created_at")
 
   actor User? @relation("ActorAuditLogs", fields: [actorId], references: [id], onDelete: SetNull)
 

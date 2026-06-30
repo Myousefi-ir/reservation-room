@@ -87,14 +87,11 @@ export class ReservationsService {
 
     const participantsData = await this.buildParticipants(dto.participants);
 
-    // Atomic conflict check: serialize concurrent attempts on the same slot with
-    // a Postgres advisory lock, re-check inside the transaction, and rely on the
-    // partial unique index as the final guarantee.
+    // Atomic conflict check: re-check inside the transaction (SQLite serializes
+    // writers, so a write transaction already holds the database lock) and rely on
+    // the partial unique index `uniq_active_slot` as the final guarantee.
     const created = await this.prisma
       .$transaction(async (tx) => {
-        const lockKey = `${dto.roomId}|${dateStr}|${dto.startTime}`;
-        await tx.$queryRawUnsafe('SELECT pg_advisory_xact_lock(hashtext($1)::bigint)', lockKey);
-
         const clash = await tx.reservation.findFirst({
           where: {
             roomId: dto.roomId,
