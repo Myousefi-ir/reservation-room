@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  @apply bg-slate-50 text-slate-900 antialiased;
+  font-family: 'Vazirmatn', system-ui, -apple-system, sans-serif;
+}
+
+/* Latin numerals/words inside an RTL page stay readable */
+.ltr {
+  direction: ltr;
+  unicode-bidi: plaintext;
+}
+
+/* Thin scrollbar for the date strip */
+.no-scrollbar::-webkit-scrollbar {
+  height: 6px;
+}
+.no-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 rounded-full;
+}

@@ -1,0 +1,65 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: mammut_vip_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-mammut}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mammut_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-mammut_vip}
+      TZ: ${APP_TIMEZONE:-Asia/Tehran}
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mammut} -d ${POSTGRES_DB:-mammut_vip}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    container_name: mammut_vip_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://mammut:mammut_secret@db:5432/mammut_vip?schema=public}
+      BACKEND_PORT: ${BACKEND_PORT:-4000}
+      APP_TIMEZONE: ${APP_TIMEZONE:-Asia/Tehran}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-change_me_access_secret}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change_me_refresh_secret}
+      JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-15m}
+      JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-7d}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      BOOKING_MAX_DAYS_AHEAD: ${BOOKING_MAX_DAYS_AHEAD:-14}
+      BOOKING_START_HOUR: ${BOOKING_START_HOUR:-8}
+      BOOKING_END_HOUR: ${BOOKING_END_HOUR:-16}
+      SEED_ADMIN_MOBILE: ${SEED_ADMIN_MOBILE:-09120000000}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-Admin@1234}
+      SEED_ADMIN_FIRST_NAME: ${SEED_ADMIN_FIRST_NAME:-مدیر}
+      SEED_ADMIN_LAST_NAME: ${SEED_ADMIN_LAST_NAME:-سیستم}
+      SMS_PROVIDER: ${SMS_PROVIDER:-console}
+    ports:
+      - "${BACKEND_PORT:-4000}:4000"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:4000/api}
+    container_name: mammut_vip_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:4000/api}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+
+volumes:
+  db_data:

@@ -1,0 +1,136 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  pending
+  active
+  rejected
+}
+
+enum UserRole {
+  user
+  admin
+}
+
+enum ReservationStatus {
+  active
+  cancelled
+  deleted
+}
+
+enum AuditAction {
+  reservation_created
+  reservation_cancelled
+  reservation_updated
+  reservation_rejected
+  reservation_deleted
+  user_approved
+  user_rejected
+  user_deleted
+  role_granted
+  role_revoked
+}
+
+model User {
+  id        String     @id @default(uuid())
+  firstName String     @map("first_name")
+  lastName  String     @map("last_name")
+  mobile    String     @unique
+  password  String
+  status    UserStatus @default(pending)
+  role      UserRole   @default(user)
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+
+  reservations   Reservation[]
+  participations Participant[]
+  refreshTokens  RefreshToken[]
+  auditLogs      AuditLog[]     @relation("ActorAuditLogs")
+
+  @@map("users")
+}
+
+model Room {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  reservations Reservation[]
+
+  @@map("rooms")
+}
+
+model Reservation {
+  id          String            @id @default(uuid())
+  userId      String            @map("user_id")
+  roomId      String            @map("room_id")
+  title       String
+  description String?
+  date        DateTime          @db.Date
+  startTime   String            @map("start_time") // "HH:mm" (Asia/Tehran)
+  endTime     String            @map("end_time") // "HH:mm" (Asia/Tehran)
+  attendees   Int               @default(0)
+  status      ReservationStatus @default(active)
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  room         Room          @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  participants Participant[]
+
+  @@index([roomId, date])
+  @@index([userId])
+  @@map("reservations")
+}
+
+model Participant {
+  id            String  @id @default(uuid())
+  reservationId String  @map("reservation_id")
+  userId        String? @map("user_id")
+  guestName     String? @map("guest_name")
+
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  user        User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([reservationId])
+  @@map("participants")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  tokenHash String   @map("token_hash")
+  expiresAt DateTime @map("expires_at")
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model AuditLog {
+  id         String      @id @default(uuid())
+  actorId    String?     @map("actor_id")
+  action     AuditAction
+  entityType String      @map("entity_type")
+  entityId   String?     @map("entity_id")
+  metadata   Json?
+  createdAt  DateTime    @default(now()) @map("created_at")
+
+  actor User? @relation("ActorAuditLogs", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([actorId])
+  @@map("audit_logs")
+}
